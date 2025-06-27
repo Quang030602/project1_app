@@ -1,0 +1,11 @@
+streamlit
+pandas
+numpy
+wordcloud
+matplotlib
+plotly
+joblib
+scikit-learn
+openpyxl
+streamlit-aggrid
+xlrd
