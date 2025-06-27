@@ -144,9 +144,10 @@ streamlit run project1_app.py
 
 ## 📞 Liên hệ
 
-👨‍💻 **Developer**: Data Science & ML Team  
-📧 **Email**: contact@example.com  
+👨‍💻 **Developer**: Lê Nguyễn Minh Quang & Nguyễn Quỳnh Oanh Thảo
+📧 **Email**: minhquang030602t@example.com  
 🌐 **Project**: ITViec Analysis Dashboard 2025
+
 
 ---
 
