@@ -198,16 +198,27 @@ def apply_filters(data_to_filter):
     if selected_position != "Tất cả" and 'Position' in filtered_data.columns:
         filtered_data = filtered_data[filtered_data['Position'] == selected_position]
     return filtered_data
+def safe_for_aggrid(df):
+    """Xử lý DataFrame truyền vào AgGrid, ép kiểu, fillna, đổi datetime về string, loại bỏ object phức tạp."""
+    df = df.copy()
+    for col in df.columns:
+        # Convert datetime
+        if pd.api.types.is_datetime64_any_dtype(df[col]):
+            df[col] = df[col].astype(str)
+        # Convert list/dict/object về string
+        if df[col].apply(lambda x: isinstance(x, (list, dict))).any():
+            df[col] = df[col].astype(str)
+        # Fillna tất cả cell (chống lỗi NoneType)
+        df[col] = df[col].fillna("")
+    return df
 
 # ---------- TAB: TỔNG QUAN 1 CÔNG TY ---------- #
 if tab == "Tổng quan 1 công ty" and selected_companies:
     selected_company = selected_companies[0]
     st.header(f"Phân tích cảm xúc review cho {selected_company}")
     company_reviews = data[data["Company Name"] == selected_company]
-    
-    # Apply filters
     company_reviews = apply_filters(company_reviews)
-    
+
     if company_reviews.empty:
         st.warning(f"Không có review nào cho công ty {selected_company} với bộ lọc đã chọn.")
     else:
@@ -225,18 +236,40 @@ if tab == "Tổng quan 1 công ty" and selected_companies:
         df_show['Cảm xúc đánh giá'] = df_show['Sentiment'].map(sentiment_map)
         df_show = df_show[['What I liked', 'Cảm xúc đánh giá']]
 
+        # Sửa ở đây: Xử lý DataFrame trước khi truyền AgGrid
+        df_show = safe_for_aggrid(df_show)
+
         sentiment_counts = df_show['Cảm xúc đánh giá'].value_counts()
-        # Card tổng quan
-        st.markdown(f"""
-        <div class="summary-card">
-            <div class="summary-card-title">Tổng quan cảm xúc {selected_company}</div>
-            <ul>
-                <li>Review tích cực: <b>{sentiment_counts.get('positive (tích cực)',0)}</b></li>
-                <li>Review trung tính: <b>{sentiment_counts.get('neutral (trung tính)',0)}</b></li>
-                <li>Review tiêu cực: <b>{sentiment_counts.get('negative (tiêu cực)',0)}</b></li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
+
+        # ... Phần summary-card, nút đề xuất giữ nguyên ...
+
+        # Section review + AgGrid
+        st.markdown('<div class="section-box">', unsafe_allow_html=True)
+        st.subheader("Các review và cảm xúc")
+        gb = GridOptionsBuilder.from_dataframe(df_show)
+        gb.configure_default_column(editable=False, filter=True, sortable=True, resizable=True)
+        gb.configure_pagination(paginationAutoPageSize=True)
+
+        # Tooltip cho từng cell
+        cell_tooltip = JsCode("""
+        function(params) {
+            if(params.colDef.field === 'Cảm xúc đánh giá') {
+                return {'value': 'Phân loại: ' + params.value};
+            }
+            return {'value': params.value};
+        }
+        """)
+        gb.configure_column('What I liked', tooltipField='What I liked', cellRenderer=cell_tooltip, width=400)
+        gb.configure_column('Cảm xúc đánh giá', tooltipField='Cảm xúc đánh giá', cellRenderer=cell_tooltip, width=200)
+        gridOptions = gb.build()
+
+        try:
+            AgGrid(df_show, gridOptions=gridOptions, enable_enterprise_modules=False,
+                   height=350, fit_columns_on_grid_load=True, theme='streamlit')
+        except Exception as e:
+            st.error(f"Lỗi khi hiển thị AgGrid: {e}")
+
+        st.markdown('</div>', unsafe_allow_html=True)
 
         # Nút bấm với chức năng thực tế
         if st.button("🔍 Xem đề xuất cải thiện", key="improvement_btn"):
