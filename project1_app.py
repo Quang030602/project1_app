@@ -250,17 +250,9 @@ if tab == "Tổng quan 1 công ty" and selected_companies:
         gb.configure_default_column(editable=False, filter=True, sortable=True, resizable=True)
         gb.configure_pagination(paginationAutoPageSize=True)
 
-        # Tooltip cho từng cell
-        cell_tooltip = JsCode("""
-        function(params) {
-            if(params.colDef.field === 'Cảm xúc đánh giá') {
-                return {'value': 'Phân loại: ' + params.value};
-            }
-            return {'value': params.value};
-        }
-        """)
-        gb.configure_column('What I liked', tooltipField='What I liked', cellRenderer=cell_tooltip, width=400)
-        gb.configure_column('Cảm xúc đánh giá', tooltipField='Cảm xúc đánh giá', cellRenderer=cell_tooltip, width=200)
+        # Configure columns without JsCode
+        gb.configure_column('What I liked', width=400)
+        gb.configure_column('Cảm xúc đánh giá', width=200)
         gridOptions = gb.build()
 
         try:
@@ -328,32 +320,7 @@ if tab == "Tổng quan 1 công ty" and selected_companies:
                         </div>
                         """, unsafe_allow_html=True)
 
-        # Section review + AgGrid
-        st.markdown('<div class="section-box">', unsafe_allow_html=True)
-        st.subheader("Các review và cảm xúc")
-        
-        # AgGrid configuration
-        gb = GridOptionsBuilder.from_dataframe(df_show)
-        gb.configure_default_column(editable=False, filter=True, sortable=True, resizable=True)
-        gb.configure_pagination(paginationAutoPageSize=True)
-        
-        # Tooltip cho từng cell
-        cell_tooltip = JsCode("""
-        function(params) {
-            if(params.colDef.field === 'Cảm xúc đánh giá') {
-                return {'value': 'Phân loại: ' + params.value};
-            }
-            return {'value': params.value};
-        }
-        """)
-        
-        gb.configure_column('What I liked', tooltipField='What I liked', cellRenderer=cell_tooltip, width=400)
-        gb.configure_column('Cảm xúc đánh giá', tooltipField='Cảm xúc đánh giá', cellRenderer=cell_tooltip, width=200)
-        gridOptions = gb.build()
 
-        AgGrid(df_show, gridOptions=gridOptions, enable_enterprise_modules=False, 
-               height=350, fit_columns_on_grid_load=True, theme='streamlit')
-        st.markdown('</div>', unsafe_allow_html=True)
 
         # Bar chart section
         st.markdown('<div class="section-box">', unsafe_allow_html=True)
@@ -548,24 +515,9 @@ elif tab == "Dashboard Radar" and selected_companies:
     gb_radar = GridOptionsBuilder.from_dataframe(radar_table)
     gb_radar.configure_default_column(editable=False, filter=True, sortable=True, resizable=True)
     
-    # Tooltip cho từng cell
-    cell_tooltip_radar = JsCode("""
-    function(params) {
-        var tooltips = {
-            'Salary & benefits': 'Lương, thưởng, phúc lợi',
-            'Training & learning': 'Cơ hội đào tạo, phát triển kỹ năng',
-            'Management cares about me': 'Quản lý quan tâm tới nhân viên',
-            'Culture & fun': 'Văn hóa, hoạt động tập thể',
-            'Office & workspace': 'Không gian làm việc, cơ sở vật chất'
-        };
-        var tooltip = tooltips[params.colDef.field] || '';
-        return {'value': params.value + ' điểm - ' + tooltip};
-    }
-    """)
-    
     gb_radar.configure_column('Company Name', pinned='left', width=180)
     for col in metrics:
-        gb_radar.configure_column(col, tooltipField=col, cellRenderer=cell_tooltip_radar, width=120)
+        gb_radar.configure_column(col, width=120)
     
     gridOptions_radar = gb_radar.build()
     
